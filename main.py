@@ -5,6 +5,7 @@ import collections
 from cmath import sqrt
 from math import pow
 import matplotlib.pyplot as plt
+import pandas as pd
 
 def create_connection(db_file):
     """ create a database connection to the SQLite database
@@ -33,11 +34,18 @@ def select_data(connection):
     #print(len(rows))
 
     #cur.execute("SELECT FIRE_SIZE,STAT_CAUSE_CODE FROM Fires")
-    cur.execute("SELECT LATITUDE,LONGITUDE FROM Fires")
+    cur.execute("SELECT FIRE_SIZE,STAT_CAUSE_CODE,DISCOVERY_DATE,CONT_DATE FROM Fires")
     data = cur.fetchall()
     relevant_data = []
-    for row in data:
-        relevant_data.append([row[0], row[1]])
+    epoch = pd.to_datetime(0, unit='s').to_julian_date()
+    for row in data[:1000]:
+        if row[0] is None or row[1] is None or row[2] is None or row[3] is None:
+            continue
+        discovery = pd.to_datetime(row[2] - epoch, unit='D')
+        contained = pd.to_datetime(row[3] - epoch, unit='D')
+        fire_length = (contained - discovery).days
+        relevant_data.append([row[0], fire_length])
+        print("added row ", row)
     print(len(relevant_data))
     return relevant_data
 
@@ -51,7 +59,7 @@ def euclidean_distance(point1, point2):
 
 def k_means(dataset, k):
     #dataset_size = len(dataset)
-    dataset_size = 500000
+    dataset_size = 200
     centroids = []
     # Set initial centroid size randomly from the dataset
     for i in range(k):
@@ -123,7 +131,7 @@ def k_means(dataset, k):
 
             # Add x and y axis
             plt.xlabel("X-Axis (fire size)")
-            plt.ylabel("Y-Axis (cause code)")
+            plt.ylabel("Y-Axis (fire length)")
 
             # Plot centroids
             print("Number of iterations: " + str(num_iterations))
