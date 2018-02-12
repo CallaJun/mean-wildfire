@@ -34,19 +34,18 @@ def select_data(connection):
     #print(len(rows))
 
     #cur.execute("SELECT FIRE_SIZE,STAT_CAUSE_CODE FROM Fires")
-    cur.execute("SELECT FIRE_SIZE,STAT_CAUSE_CODE,DISCOVERY_DATE,CONT_DATE FROM Fires")
+    cur.execute("SELECT FIRE_SIZE,STAT_CAUSE_CODE,DISCOVERY_DATE,CONT_DATE,FIRE_YEAR FROM Fires")
     data = cur.fetchall()
     relevant_data = []
     epoch = pd.to_datetime(0, unit='s').to_julian_date()
-    for row in data[:1000]:
+    for row in data:
+        # if row[4] != year we want, continue (row 4 is the fire year
         if row[0] is None or row[1] is None or row[2] is None or row[3] is None:
             continue
         discovery = pd.to_datetime(row[2] - epoch, unit='D')
         contained = pd.to_datetime(row[3] - epoch, unit='D')
         fire_length = (contained - discovery).days
         relevant_data.append([row[0], fire_length])
-        print("added row ", row)
-    print(len(relevant_data))
     return relevant_data
 
 def euclidean_distance(point1, point2):
@@ -58,8 +57,9 @@ def euclidean_distance(point1, point2):
     return abs(sqrt(sum))
 
 def k_means(dataset, k):
-    #dataset_size = len(dataset)
-    dataset_size = 200
+    dataset_size = len(dataset)-1
+    print(dataset_size)
+    #dataset_size = 10000
     centroids = []
     # Set initial centroid size randomly from the dataset
     for i in range(k):
@@ -108,7 +108,11 @@ def k_means(dataset, k):
         # Finish updating centroid, divide for mean
         for i in range(len(centroids)):
             for j in range(len(data)):
-                centroids[i][j] /= len(cluster_points[i])
+                # Check for empty cluster
+                if len(cluster_points[i]) == 0:
+                    centroids[i][j] = int(randint(1, dataset_size))
+                else:
+                    centroids[i][j] /= len(cluster_points[i])
 
         num_iterations += 1
         # Test whether centroids are in their ideal location
