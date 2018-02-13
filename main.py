@@ -20,7 +20,7 @@ def create_connection(db_file):
         print(e)
     return None
 
-def select_data(connection):
+def select_data(connection, year):
     """
     Query all rows in the tasks table
     :param conn: the Connection object
@@ -40,7 +40,7 @@ def select_data(connection):
     epoch = pd.to_datetime(0, unit='s').to_julian_date()
     for row in data:
         # if row[4] != year we want, continue (row 4 is the fire year
-        if row[0] is None or row[1] is None or row[2] is None or row[3] is None:
+        if row[0] is None or row[1] is None or row[2] is None or row[3] is None or row[4] != year:
             continue
         discovery = pd.to_datetime(row[2] - epoch, unit='D')
         contained = pd.to_datetime(row[3] - epoch, unit='D')
@@ -59,7 +59,6 @@ def euclidean_distance(point1, point2):
 def k_means(dataset, k):
     dataset_size = len(dataset)-1
     print(dataset_size)
-    #dataset_size = 10000
     centroids = []
     # Set initial centroid size randomly from the dataset
     for i in range(k):
@@ -153,7 +152,7 @@ def main():
     connection = create_connection(database)
     with connection:
         print("Query all Fires")
-        k_means(select_data(connection), 4)
+        k_means(select_data(connection, 2014), 4)
 
 if __name__ == '__main__':
     main()
