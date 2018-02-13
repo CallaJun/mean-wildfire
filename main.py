@@ -8,11 +8,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 def create_connection(db_file):
-    """ create a database connection to the SQLite database
-        specified by the db_file
-    :param db_file: database file
-    :return: Connection object or None
-    """
     try:
         connection = sqlite3.connect(db_file)
         return connection
@@ -21,25 +16,12 @@ def create_connection(db_file):
     return None
 
 def select_data(connection, year):
-    """
-    Query all rows in the tasks table
-    :param conn: the Connection object
-    :return:
-    """
     cur = connection.cursor()
-
-    # Printing out each row from Fires
-    #cur.execute("SELECT * FROM Fires")
-    #rows = cur.fetchall()
-    #print(len(rows))
-
-    #cur.execute("SELECT FIRE_SIZE,STAT_CAUSE_CODE FROM Fires")
     cur.execute("SELECT FIRE_SIZE,STAT_CAUSE_CODE,DISCOVERY_DATE,CONT_DATE,FIRE_YEAR FROM Fires")
     data = cur.fetchall()
     relevant_data = []
     epoch = pd.to_datetime(0, unit='s').to_julian_date()
     for row in data:
-        # if row[4] != year we want, continue (row 4 is the fire year
         if row[0] is None or row[1] is None or row[2] is None or row[3] is None or row[4] != year:
             continue
         discovery = pd.to_datetime(row[2] - epoch, unit='D')
@@ -50,14 +32,12 @@ def select_data(connection, year):
 
 def euclidean_distance(point1, point2):
     sum = 0
-    from math import pow
-    from cmath import sqrt
     for i in range(len(point1)):
         sum += pow(float(point1[i]) - float(point2[i]), 2)
     return abs(sqrt(sum))
 
 def k_means(dataset, k):
-    dataset_size = len(dataset)-1
+    dataset_size = len(dataset) - 1
     print(dataset_size)
     centroids = []
     # Set initial centroid size randomly from the dataset
@@ -148,11 +128,10 @@ def k_means(dataset, k):
 def main():
     database = "wildfires.sqlite"
  
-    # create a database connection
+    # Create a database connection
     connection = create_connection(database)
     with connection:
-        print("Query all Fires")
-        k_means(select_data(connection, 2014), 4)
+        k_means(select_data(connection, 2003), 4)
 
 if __name__ == '__main__':
     main()
