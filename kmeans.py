@@ -4,8 +4,18 @@ from random import randint
 import collections
 from cmath import sqrt
 from math import pow
+import math
 import matplotlib.pyplot as plt
 import pandas as pd
+
+class Fire():
+    def __init__(self, fire_size, stat_cause_code, discovery_date, cont_date, fire_year):
+        self.fire_size = fire_size
+        self.stat_cause_code = stat_cause_code
+        self.fire_year = fire_year
+        epoch = pd.to_datetime(0, unit='s').to_julian_date()
+        self.fire_length = (pd.to_datetime(cont_date - epoch, unit='D') 
+            - pd.to_datetime(discovery_date - epoch, unit='D')).days
 
 def create_connection(db_file):
     try:
@@ -20,8 +30,9 @@ def select_data(connection, year):
     cur.execute("SELECT FIRE_SIZE,STAT_CAUSE_CODE,DISCOVERY_DATE,CONT_DATE,FIRE_YEAR FROM Fires")
     data = cur.fetchall()
     relevant_data = []
+    fire_objects = []
     epoch = pd.to_datetime(0, unit='s').to_julian_date()
-    for row in data:
+    for row in data[:500]:
         if row[0] is None or row[1] is None or row[2] is None or row[3] is None:
             continue
         if row[4] != year:
@@ -30,13 +41,14 @@ def select_data(connection, year):
         contained = pd.to_datetime(row[3] - epoch, unit='D')
         fire_length = (contained - discovery).days
         relevant_data.append([row[0], fire_length])
-    return relevant_data
+        fire_objects.append(Fire(row[0], row[1], row[2], row[3], row[4]))
+    return fire_objects
+    #return relevant_data
 
-def euclidean_distance(point1, point2):
-    sum = 0
-    for i in range(len(point1)):
-        sum += pow(float(point1[i]) - float(point2[i]), 2)
-    return abs(sqrt(sum))
+def euclidean_distance(fire1, fire2):
+    point1 = [fire1.fire_size, fire1.fire_length]
+    point2 = [fire2.fire_size, fire2.fire_length]
+    return math.sqrt(((point1[0] - point2[0])**2) + ((point1[1] - point2[1])**2))
 
 def k_means(dataset, k):
     dataset_size = len(dataset) - 1
@@ -44,7 +56,8 @@ def k_means(dataset, k):
     centroids = []
     # Set initial centroid size randomly from the dataset
     for i in range(k):
-        centroids.append(list(dataset[int(randint(1, dataset_size))]))
+        random_fire = dataset[int(randint(1, dataset_size))]
+        centroids.append(random_fire)
 
     num_iterations = 0
     while True:
@@ -65,17 +78,17 @@ def k_means(dataset, k):
                     distances[i] = euclidean_dist
         cluster_points = [[] for i in range(k)]
         for i in range(dataset_size):
-            cluster_points[clusters[i]].append(list(dataset[i]))
+            cluster_points[clusters[i]].append([dataset[i].fire_size, dataset[i].fire_length])
 
         old_centroids = []
         for centroid in centroids:
-            old_centroids.append(list(centroid))
+            old_centroids.append([centroid.fire_size, centroid.fire_length])
         old_centroids_list = cluster_points[:]
 
         # Reset centroid value
         for centroid in centroids:
-            for i in range(len(centroid)):
-                centroid[i] = 0
+            centroid.fire_size = 0
+            centroid.fire_length = 0
 
         # Update centroid, sum data
         for i in range(len(cluster_points)):
@@ -83,8 +96,8 @@ def k_means(dataset, k):
             current = i
             for data in cluster_points[i]:
                 # Iterate through cluster
-                for j in range(len(data)):
-                    centroids[current][j] += float(data[j])
+                centroids[current].fire_size += data[0]
+                centroids[current].fire_length += data[1]
 
         # Finish updating centroid, divide for mean
         for i in range(len(centroids)):
