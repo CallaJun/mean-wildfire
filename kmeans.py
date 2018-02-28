@@ -32,7 +32,7 @@ def select_data(connection, year):
     relevant_data = []
     fire_objects = []
     epoch = pd.to_datetime(0, unit='s').to_julian_date()
-    for row in data[:500]:
+    for row in data:
         if row[0] is None or row[1] is None or row[2] is None or row[3] is None:
             continue
         if row[4] != year:
@@ -45,8 +45,8 @@ def select_data(connection, year):
     return fire_objects
     #return relevant_data
 
-def euclidean_distance(fire1, fire2):
-    point1 = [fire1.fire_size, fire1.fire_length]
+def euclidean_distance(centroid, fire2):
+    point1 = centroid
     point2 = [fire2.fire_size, fire2.fire_length]
     return math.sqrt(((point1[0] - point2[0])**2) + ((point1[1] - point2[1])**2))
 
@@ -57,7 +57,7 @@ def k_means(dataset, k):
     # Set initial centroid size randomly from the dataset
     for i in range(k):
         random_fire = dataset[int(randint(1, dataset_size))]
-        centroids.append(random_fire)
+        centroids.append([random_fire.fire_size, random_fire.fire_length])
 
     num_iterations = 0
     while True:
@@ -78,17 +78,17 @@ def k_means(dataset, k):
                     distances[i] = euclidean_dist
         cluster_points = [[] for i in range(k)]
         for i in range(dataset_size):
-            cluster_points[clusters[i]].append([dataset[i].fire_size, dataset[i].fire_length])
+            cluster_points[clusters[i]].append(dataset[i])
 
         old_centroids = []
         for centroid in centroids:
-            old_centroids.append([centroid.fire_size, centroid.fire_length])
+            old_centroids.append(list(centroid))
         old_centroids_list = cluster_points[:]
 
         # Reset centroid value
         for centroid in centroids:
-            centroid.fire_size = 0
-            centroid.fire_length = 0
+            for i in range(len(centroid)):
+                centroid[i] = 0
 
         # Update centroid, sum data
         for i in range(len(cluster_points)):
@@ -96,17 +96,18 @@ def k_means(dataset, k):
             current = i
             for data in cluster_points[i]:
                 # Iterate through cluster
-                centroids[current].fire_size += data[0]
-                centroids[current].fire_length += data[1]
+                centroids[current][0] += data.fire_size 
+                centroids[current][1] += data.fire_length
 
         # Finish updating centroid, divide for mean
         for i in range(len(centroids)):
-            for j in range(len(data)):
-                # Check for empty cluster
-                if len(cluster_points[i]) == 0:
-                    centroids[i][j] = int(randint(1, dataset_size))
-                else:
-                    centroids[i][j] /= len(cluster_points[i])
+            # Check for empty cluster
+            if len(cluster_points[i]) == 0:
+                random_fire = dataset[int(randint(1, dataset_size))]
+                centroids.append([random_fire.fire_size, random_fire.fire_length])
+            else:
+                centroids[i][0] /= len(cluster_points[i])
+                centroids[i][1] /= len(cluster_points[i])
 
         num_iterations += 1
         # Test whether centroids are in their ideal location
@@ -118,8 +119,8 @@ def k_means(dataset, k):
                 x2 = []
                 y2 = []
                 for data_list in old_centroids_list[i]:
-                    x2.append(data_list[0])
-                    y2.append(data_list[1])
+                    x2.append(data_list.fire_size)
+                    y2.append(data_list.fire_length)
                 x1.append(list(x2))
                 y1.append(list(y2))
 
