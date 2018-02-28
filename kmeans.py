@@ -116,6 +116,7 @@ def k_means(dataset, k):
             x1 = []
             y1 = []
             for i in range(len(old_centroids_list)):
+                print(len(old_centroids_list)) # LIST OF CLUSTERS
                 x2 = []
                 y2 = []
                 for data_list in old_centroids_list[i]:
