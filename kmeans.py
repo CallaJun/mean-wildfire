@@ -50,6 +50,10 @@ def euclidean_distance(centroid, fire2):
     point2 = [fire2.fire_size, fire2.fire_length]
     return math.sqrt(((point1[0] - point2[0])**2) + ((point1[1] - point2[1])**2))
 
+# List of lists of Fire objects
+def evaluate_fires(cluster_list):
+    print(len(cluster_list))
+
 def k_means(dataset, k):
     dataset_size = len(dataset) - 1
     print(dataset_size)
@@ -115,8 +119,8 @@ def k_means(dataset, k):
             colors = ['ro', 'go', 'bo', 'co', 'mo', 'yo', 'ko', 'wo']
             x1 = []
             y1 = []
+            evaluate_fires(old_centroids_list)
             for i in range(len(old_centroids_list)):
-                print(len(old_centroids_list)) # LIST OF CLUSTERS
                 x2 = []
                 y2 = []
                 for data_list in old_centroids_list[i]:
