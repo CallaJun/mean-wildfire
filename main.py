@@ -52,6 +52,15 @@ def euclidean_distance(centroid, fire2):
 
 # List of lists of Fire objects
 def evaluate_fires(cluster_list):
+    for cluster in cluster_list:
+        causes = {}
+        for fire in cluster:
+            if fire.stat_cause_code not in causes:
+                causes[fire.stat_cause_code] = 1
+            else:
+                causes[fire.stat_cause_code] += 1
+        print(causes)
+
     print(len(cluster_list))
 
 def k_means(dataset, k):
