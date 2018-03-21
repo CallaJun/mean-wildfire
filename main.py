@@ -9,13 +9,13 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 class Fire():
-    def __init__(self, fire_size, stat_cause_code, discovery_date, cont_date, fire_year):
-        self.fire_size = fire_size
-        self.stat_cause_code = stat_cause_code
+    def __init__(self, fire_year, state, latitude, longitude):
         self.fire_year = fire_year
-        epoch = pd.to_datetime(0, unit='s').to_julian_date()
-        self.fire_length = (pd.to_datetime(cont_date - epoch, unit='D') 
-            - pd.to_datetime(discovery_date - epoch, unit='D')).days
+        self.state = state
+
+        # What is actually used
+        self.x_value = latitude
+        self.y_value = longitude
 
 def create_connection(db_file):
     try:
@@ -26,51 +26,49 @@ def create_connection(db_file):
     return None
 
 def select_data(connection, year):
+    print("Year: ", year)
     cur = connection.cursor()
-    cur.execute("SELECT FIRE_SIZE,STAT_CAUSE_CODE,DISCOVERY_DATE,CONT_DATE,FIRE_YEAR FROM Fires")
+    cur.execute("SELECT FIRE_YEAR,STATE,LATITUDE,LONGITUDE FROM Fires")
     data = cur.fetchall()
     relevant_data = []
     fire_objects = []
     epoch = pd.to_datetime(0, unit='s').to_julian_date()
     for row in data:
-        if row[0] is None or row[1] is None or row[2] is None or row[3] is None:
+        if row[2] is None or row[3] is None:
             continue
-        if row[4] != year:
+        if row[0] != year:
             continue
-        discovery = pd.to_datetime(row[2] - epoch, unit='D')
-        contained = pd.to_datetime(row[3] - epoch, unit='D')
-        fire_length = (contained - discovery).days
-        relevant_data.append([row[0], fire_length])
-        fire_objects.append(Fire(row[0], row[1], row[2], row[3], row[4]))
+        relevant_data.append([row[2], row[3]])
+        fire_objects.append(Fire(row[0], row[1], row[2], row[3]))
     return fire_objects
-    #return relevant_data
 
 def euclidean_distance(centroid, fire2):
     point1 = centroid
-    point2 = [fire2.fire_size, fire2.fire_length]
+    point2 = [fire2.x_value, fire2.y_value]
     return math.sqrt(((point1[0] - point2[0])**2) + ((point1[1] - point2[1])**2))
 
 # List of lists of Fire objects
 def evaluate_fires(cluster_list):
     for cluster in cluster_list:
+        print(str(len(cluster_list)) + " fires in this cluster")
         causes = {}
         for fire in cluster:
-            if fire.stat_cause_code not in causes:
-                causes[fire.stat_cause_code] = 1
+            if fire.state not in causes:
+                causes[fire.state] = 1
             else:
-                causes[fire.stat_cause_code] += 1
+                causes[fire.state] += 1
         print(causes)
 
     print(len(cluster_list))
 
 def k_means(dataset, k):
     dataset_size = len(dataset) - 1
-    print(dataset_size)
+    print("Dataset size: ", dataset_size)
     centroids = []
     # Set initial centroid size randomly from the dataset
     for i in range(k):
         random_fire = dataset[int(randint(1, dataset_size))]
-        centroids.append([random_fire.fire_size, random_fire.fire_length])
+        centroids.append([random_fire.x_value, random_fire.y_value])
 
     num_iterations = 0
     while True:
@@ -109,15 +107,15 @@ def k_means(dataset, k):
             current = i
             for data in cluster_points[i]:
                 # Iterate through cluster
-                centroids[current][0] += data.fire_size 
-                centroids[current][1] += data.fire_length
+                centroids[current][0] += data.x_value 
+                centroids[current][1] += data.y_value
 
         # Finish updating centroid, divide for mean
         for i in range(len(centroids)):
             # Check for empty cluster
             if len(cluster_points[i]) == 0:
                 random_fire = dataset[int(randint(1, dataset_size))]
-                centroids.append([random_fire.fire_size, random_fire.fire_length])
+                centroids.append([random_fire.x_value, random_fire.y_value])
             else:
                 centroids[i][0] /= len(cluster_points[i])
                 centroids[i][1] /= len(cluster_points[i])
@@ -133,8 +131,8 @@ def k_means(dataset, k):
                 x2 = []
                 y2 = []
                 for data_list in old_centroids_list[i]:
-                    x2.append(data_list.fire_size)
-                    y2.append(data_list.fire_length)
+                    x2.append(data_list.x_value)
+                    y2.append(data_list.y_value)
                 x1.append(list(x2))
                 y1.append(list(y2))
 
@@ -143,8 +141,8 @@ def k_means(dataset, k):
                 plt.plot(x1[i], y1[i], colors[i])
 
             # Add x and y axis
-            plt.xlabel("X-Axis (fire size)")
-            plt.ylabel("Y-Axis (fire length)")
+            plt.xlabel("X-Axis (latitude)")
+            plt.ylabel("Y-Axis (longitude)")
 
             # Plot centroids
             print("Number of iterations: " + str(num_iterations))
@@ -161,7 +159,7 @@ def main():
     # Create a database connection
     connection = create_connection(database)
     with connection:
-        k_means(select_data(connection, 2004), 3)
+        k_means(select_data(connection, 1995), 2)
 
 if __name__ == '__main__':
     main()
