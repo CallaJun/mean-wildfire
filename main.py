@@ -157,9 +157,9 @@ def main():
     database = "wildfires.sqlite"
  
     # Create a database connection
-    connection = create_connection(database)
+    connection = connect(database)
     with connection:
-        k_means(select_data(connection, 1995), 2)
+        k_means(select_data(connection, 2000), 2)
 
 if __name__ == '__main__':
     main()
